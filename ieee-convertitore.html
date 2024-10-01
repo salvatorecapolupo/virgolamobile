@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Convertitore IEEE 754</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.6.0/css/bootstrap.min.css">
+    <style>
+        body {
+            padding-top: 50px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+        }
+        .result-container, .explanation-container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+        }
+        .big-input {
+            font-size: 1.5rem;
+            padding: 10px;
+        }
+        .big-button {
+            font-size: 1.5rem;
+            padding: 10px;
+        }
+        .result-table td {
+            padding: 5px;
+        }
+        .result-table {
+            margin-top: 20px;
+        }
+        .explanation-container {
+            margin-top: 30px;
+        }
+        .tooltip-inner {
+            max-width: 200px;
+            font-size: 0.9rem;
+        }
+        .text-blue { color: blue; }
+        .text-yellow { color: goldenrod; }
+        .text-red { color: red; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1 class="text-center">Convertitore virgola mobile (32bit) - Standard IEEE 754</h1>
+    <p class="text-center">Inserisci un numero decimale nel formato X.Y per convertirlo in binario IEEE 754.</p>
+
+    <pre> bit per il segno: indica se il numero è positivo o negativo.
+        8 bit per l'esponente: rappresenta l'esponente del numero in notazione scientifica, con un bias di 127.
+        23 bit per la mantissa: contiene la parte frazionaria del numero, normalizzata.</pre>
+    <div class="form-group">
+        <label for="inputNumber">Numero decimale (X.Y):</label>
+        <input type="text" id="inputNumber" class="form-control big-input" placeholder="Es: 12.34" pattern="^-?\d+\.\d+$" title="Inserisci un numero nel formato X.Y (es: 12.34)">
+    </div>
+
+    <button id="convertButton" class="btn btn-primary big-button btn-block">Converti in IEEE 754</button>
+
+    <div class="result-container mt-4">
+        <h3>Risultati:</h3>
+        <table class="table result-table">
+            <tbody>
+                <tr>
+                    <td><strong class="text-blue">Segno:</strong> <span data-toggle="tooltip" title="Il segno indica se il numero è positivo o negativo. 0 per positivo, 1 per negativo.">(?)</span></td>
+                    <td id="signBit" class="text-blue">-</td>
+                </tr>
+                <tr>
+                    <td><strong class="text-yellow">Esponente:</strong> <span data-toggle="tooltip" title="L'esponente è calcolato aggiungendo 127 all'esponente della rappresentazione in notazione scientifica binaria.">(?)</span></td>
+                    <td id="exponent" class="text-yellow">-</td>
+                </tr>
+                <tr>
+                    <td><strong class="text-red">Mantissa:</strong> <span data-toggle="tooltip" title="La mantissa rappresenta la parte frazionaria normalizzata del numero. Viene normalizzata spostando la virgola in modo che ci sia un solo 1 prima della virgola.">(?)</span></td>
+                    <td id="mantissa" class="text-red">-</td>
+                </tr>
+                <tr>
+                    <td><strong>Binario IEEE 754:</strong></td>
+                    <td id="ieee754">-</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="explanation-container mt-4">
+        <h3>Calcoli dettagliati:</h3>
+        <pre id="calculationSteps">Nessun calcolo ancora effettuato.</pre>
+
+    <pre>
+        Prendiamo per esempio il numero negativo frazionario:
+
+-5,828125
+
+Trasformiamo in binario la parte intera:
+
+5:2=2 R=1
+2:2=1 R=0
+1:2=0 R=1
+
+5(10) = 101(2)
+
+Trasformiamo ora la parte decimale in binario:
+
+0,828125*2=1,65625 U=1
+0,65625 *2=1,3125  U=1
+0,3125  *2=0,625   U=0
+0,625   *2=1,25    U=1
+0,25    *2=0,5     U=0
+0,5     *2=1       U=1
+
+0,828125(10) = 110101(2)
+
+Uniamo ora le due parti:
+
+101,110101
+
+Spostiamo la virgola due posizioni verso sinistra 
+riscrivendo in questo modo il risultato:
+
+1,01110101*2^2
+
+Otteniamo quindi la parte iniziale della nostra mantissa 01110101, 
+ed avendo spostato verso sinistra la virgola di due posizioni per ottenere 
+lo stesso numero dobbiamo moltiplicare 2 al quadrato.
+
+A questo punto ricaviamo l'esponente sommando 2 al bias:
+
+2+127=129
+
+Trasformiamo questo numero in binario:
+
+129:2=64 R=1
+ 64:2=32 R=0
+ 32:2=16 R=0
+ 16:2= 8 R=0
+  8:2= 4 R=0
+  4:2= 2 R=0
+  2:2= 1 R=0
+  1:2= 0 R=1
+
+129(10)=10000001(2)
+
+Abbiamo così ottenuto il nostro numero in floating point ricordandoci 
+di mettere ad 1 il bit del segno in quanto siamo partiti da un numero negativo:
+
+-5,828125(10)=1|1000 0001|0111 0101 0000 0000 0000 000(2)
+    </pre>
+    </div>
+</div>
+
+<script>
+    document.getElementById('convertButton').addEventListener('click', function() {
+        const input = document.getElementById('inputNumber').value;
+        
+        // Verifica che il numero sia nel formato X.Y
+        const numberRegex = /^-?\d+\.\d+$/;
+        if (!numberRegex.test(input)) {
+            alert("Inserisci un numero nel formato X.Y (es: 12.34)");
+            return;
+        }
+
+        const number = parseFloat(input);
+
+        // Funzione per convertire un numero decimale in binario IEEE 754
+        function toIEEE754(number) {
+            let signBit = number < 0 ? 1 : 0;
+            let absNumber = Math.abs(number);
+            let exponent, mantissa, exponentBits, mantissaBits, calculationSteps = "";
+
+            calculationSteps += `Numero di input: ${number}\n`;
+            calculationSteps += `Segno: ${signBit} (1 se negativo, 0 se positivo)\n`;
+
+            if (absNumber === 0) {
+                exponent = 0;
+                mantissa = 0;
+                calculationSteps += "Numero uguale a zero, esponente e mantissa sono 0.\n";
+            } else {
+                let logBase2 = Math.log2(absNumber);
+                exponent = Math.floor(logBase2) + 127;
+                mantissa = (absNumber / Math.pow(2, Math.floor(logBase2))) - 1;
+
+                calculationSteps += `Esponente (pre-normalizzazione): ${Math.floor(logBase2)}\n`;
+                calculationSteps += `Esponente normalizzato (aggiunto bias 127): ${exponent}\n`;
+                calculationSteps += `Mantissa pre-normalizzata: ${absNumber / Math.pow(2, Math.floor(logBase2))}\n`;
+                calculationSteps += `Mantissa post-normalizzazione (sottraendo 1): ${mantissa.toFixed(23)}\n`;
+            }
+
+            // Conversione di mantissa ed esponente in binario
+            exponentBits = exponent.toString(2).padStart(8, '0');
+            mantissaBits = (mantissa * Math.pow(2, 23)).toString(2).substring(0, 23);
+
+            calculationSteps += `Esponente binario: ${exponentBits}\n`;
+            calculationSteps += `Mantissa binaria: ${mantissaBits}\n`;
+
+            return {
+                signBit: signBit,
+                exponentBits: exponentBits,
+                mantissaBits: mantissaBits,
+                steps: calculationSteps
+            };
+        }
+
+        const ieee = toIEEE754(number);
+
+        // Visualizzazione dei risultati
+        document.getElementById('signBit').textContent = ieee.signBit;
+        document.getElementById('exponent').textContent = ieee.exponentBits;
+        document.getElementById('mantissa').textContent = ieee.mantissaBits;
+        document.getElementById('ieee754').textContent = ieee.signBit + ' ' + ieee.exponentBits + ' ' + ieee.mantissaBits;
+
+        // Mostra i calcoli
+        document.getElementById('calculationSteps').textContent = ieee.steps;
+    });
+
+    // Abilita i tooltip di Bootstrap
+    $(function () {
+        $('[data-toggle="tooltip"]').tooltip()
+    });
+</script>
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.6.0/js/bootstrap.min.js"></script>
+
+</body>
+</html>
