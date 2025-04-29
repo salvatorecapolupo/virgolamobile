@@ -97,6 +97,21 @@
           <pre id="calcLog">Nessun calcolo effettuato.</pre>
         </div>
       </div>
+
+<hr />
+<div id="decodeSection" class="mt-4" style="display: none;">
+  <h5>Decodifica inversa</h5>
+  <div class="mb-3">
+    <label for="binInput" class="form-label">IEEE 754 (32-bit)</label>
+    <input type="text" id="binInput" class="form-control" readonly />
+  </div>
+  <div class="mb-3">
+    <button id="btnDecode" class="btn btn-secondary">Decodifica</button>
+  </div>
+  <div id="decodeResult" class="alert alert-info d-none"></div>
+</div>
+
+      
     </div>
   </div>
 </div>
@@ -179,16 +194,67 @@
     render(sign, binE, mainBits, steps);
   });
 
+
   function render(sign, exp, man, steps){
-    const fullRaw = `${sign}${exp}${man}`;
-    bitSign.textContent = sign;
-    bitExp .textContent = exp;
-    bitMan .textContent = man;
-    bitFull.textContent = fullRaw.match(/.{1,8}/g).join(' ');
-    logPre.textContent = steps.join('\n');
-    new bootstrap.Tab(document.querySelector('[data-bs-target="#resultTab"]')).show();
-  }
+  const fullRaw = `${sign}${exp}${man}`;
+  bitSign.textContent = sign;
+  bitExp .textContent = exp;
+  bitMan .textContent = man;
+  bitFull.textContent = fullRaw.match(/.{1,8}/g).join(' ');
+  logPre.textContent = steps.join('\n');
+  new bootstrap.Tab(document.querySelector('[data-bs-target="#resultTab"]')).show();
+
+  // Abilita sezione decoder
+  document.getElementById('decodeSection').style.display = 'block';
+  document.getElementById('binInput').value = fullRaw;
+
+  // Prepara decodifica e verifica errore
+  document.getElementById('btnDecode').onclick = function() {
+    const recon = decodeBinary(fullRaw);
+    const orig = parseFloat(inp.value);
+    const error = Math.abs(orig - recon);
+    const resultBox = document.getElementById('decodeResult');
+    resultBox.classList.remove('d-none');
+    
+    let html = `<strong>Numero ricostruito:</strong> ${recon}<br/>`;
+    html += `<strong>Errore assoluto:</strong> ${error.toExponential(6)}<br/>`;
+
+    if (error === 0) {
+      html += `<span class="text-success">Nessun errore di rappresentazione: la trasmissione è perfetta.</span>`;
+    } else {
+      html += `<span class="text-danger">Presente errore di arrotondamento. In fase di trasmissione, questo può portare a una leggera perdita di precisione numerica, soprattutto nei calcoli iterativi o scientifici.</span>`;
+    }
+
+    resultBox.innerHTML = html;
+  };
+}
+
+
+  
 })();
+
+  function decodeBinary(bits) {
+  const sign = parseInt(bits[0]);
+  const exp = parseInt(bits.slice(1, 9), 2);
+  const man = bits.slice(9);
+
+  const bias = 127;
+  const E = exp - bias;
+  let mantissa = 1.0;
+
+  for (let i = 0; i < man.length; i++) {
+    if (man[i] === '1') {
+      mantissa += Math.pow(2, -(i + 1));
+    }
+  }
+
+  let reconstructed = mantissa * Math.pow(2, E);
+  if (sign === 1) reconstructed *= -1;
+
+  return reconstructed;
+}
+
+  
 </script>
 
 <script
