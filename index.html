@@ -3,12 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>IEEE 754 Converter</title>
+  <title>IEEE 754 Converter - Capo &#x1F43A; </title>
   <link
     href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
     rel="stylesheet"
-    integrity="sha384-ENjdO4Dr2bkBIFxQpeoKVx1KZWR/pi1MZJk/6ZxFNvYjE4h+Il6FZ+Dzv3yg5Qm"
-    crossorigin="anonymous"
   />
   <style>
     body { background: #eef2f7; }
@@ -24,18 +22,15 @@
   <div class="card mx-auto" style="max-width: 800px;">
     <div class="card-body">
       <h1 class="h4 text-center mb-4">IEEE 754 Converter (32-bit)</h1>
-
-      <!-- Input -->
       <div class="mb-4">
         <label for="decInput" class="form-label">Numero decimale</label>
-        <input type="text" id="decInput" class="form-control" placeholder="Es. -5.828125" />
+        <input type="text" id="decInput" class="form-control" placeholder="Es. 11.22" />
       </div>
       <div class="text-end mb-4">
         <button id="btnConvert" class="btn btn-primary">Converti</button>
       </div>
 
-      <!-- Tab navigation -->
-      <ul class="nav nav-pills mb-4 justify-content-center" id="tabs">
+      <ul class="nav nav-pills mb-4 justify-content-center">
         <li class="nav-item">
           <button class="nav-link active" data-bs-target="#resultTab" data-bs-toggle="pill">Risultato</button>
         </li>
@@ -44,9 +39,7 @@
         </li>
       </ul>
 
-      <!-- Tab content -->
       <div class="tab-content">
-        <!-- Risultato -->
         <div class="tab-pane fade show active" id="resultTab">
           <div class="row text-center mb-3">
             <div class="col">
@@ -69,7 +62,6 @@
           </div>
         </div>
 
-        <!-- Procedimento -->
         <div class="tab-pane fade" id="stepsTab">
           <h6>Dettaglio dei passaggi:</h6>
           <pre id="calcLog">Nessun calcolo effettuato.</pre>
@@ -99,46 +91,71 @@
     const absV = Math.abs(v);
     let steps = [];
     steps.push(`Numero input: ${v}`);
-    steps.push(`Bit segno: ${sign} (${v<0? 'negativo':'positivo'})`);
+    steps.push(`Bit segno: ${sign}`);
 
-    // caso zero
     if (absV === 0) {
       steps.push('Valore zero → esponente e mantissa tutti 0.');
       render(sign, '00000000', '00000000000000000000000', steps);
       return;
     }
 
-    // 1) esponente
+    // 1) Esponente
     const rawE = Math.floor(Math.log2(absV));
     const biasE = rawE + 127;
     const binE  = biasE.toString(2).padStart(8,'0');
     steps.push(`log2(|v|) = ${Math.log2(absV).toFixed(6)}`);
     steps.push(`Esponente non bias: ${rawE}`);
-    steps.push(`Bias 127 → esponente = ${biasE} → binario: ${binE}`);
+    steps.push(`Esponente con bias: ${biasE} → binario: ${binE}`);
 
-    // 2) mantissa
-    const norm = absV / Math.pow(2, rawE);
-    steps.push(`Valore normalizzato: ${norm.toFixed(8)} = 1.x`);
-    let frac = norm -1, binM='';
-    for (let i=0; i<23; i++){
-      frac*=2;
-      if(frac>=1){ binM+='1'; frac-=1; }
-      else        { binM+='0'; }
+    // 2) Mantissa con round-to-nearest-even
+    const normalized = absV / Math.pow(2, rawE);
+    steps.push(`Valore normalizzato: ${normalized.toFixed(8)} = 1.x`);
+    let frac = normalized - 1;
+    let mant = '';
+    // estraggo 24 bit (23 + guard)
+    for (let i = 0; i < 24; i++) {
+      frac *= 2;
+      if (frac >= 1) {
+        mant += '1';
+        frac -= 1;
+      } else {
+        mant += '0';
+      }
     }
-    binM = binM.padEnd(23,'0');
-    steps.push(`Estraggo 23 bit mantissa: ${binM}`);
+    // split fraz bits e guard
+    let mainBits = mant.slice(0,23);
+    const guardBit = mant[23];
+    // bit di sticky (se ci sono 1 dopo il guard)
+    const sticky = frac > 0 ? 1 : 0;
+    steps.push(`Primi 23 bit mantissa: ${mainBits}`);
+    steps.push(`Guard bit: ${guardBit}, Sticky bit: ${sticky}`);
 
-    render(sign, binE, binM, steps);
+    // round-to-nearest-even
+    if (guardBit === '1' && (sticky === 1 || mainBits[22] === '1')) {
+      // sommo 1 all'ultimo bit
+      let asNum = parseInt(mainBits, 2) + 1;
+      if (asNum >>> 23) {
+        // overflow mantissa → azzero e incremento esponente
+        asNum = 0;
+        const nextBias = (biasE + 1).toString(2).padStart(8,'0');
+        steps.push('Rollover mantissa → incremento esponente di 1');
+        render(sign, nextBias, '00000000000000000000000', steps);
+        return;
+      }
+      mainBits = asNum.toString(2).padStart(23,'0');
+      steps.push(`Mantissa arrotondata: ${mainBits}`);
+    }
+
+    render(sign, binE, mainBits, steps);
   });
 
   function render(sign, exp, man, steps){
-    const full = `${sign}${exp}${man}`;
+    const fullRaw = `${sign}${exp}${man}`;
     bitSign.textContent = sign;
     bitExp .textContent = exp;
     bitMan .textContent = man;
-    bitFull.textContent = full.match(/.{1,8}/g).join(' ');
+    bitFull.textContent = fullRaw.match(/.{1,8}/g).join(' ');
     logPre.textContent = steps.join('\n');
-    // switch to risultato tab
     new bootstrap.Tab(document.querySelector('[data-bs-target="#resultTab"]')).show();
   }
 })();
@@ -146,8 +163,6 @@
 
 <script
   src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
-  integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+AMvvvtTG2xDnt7wW3kres7p3yXx6"
-  crossorigin="anonymous"
 ></script>
 </body>
 </html>
