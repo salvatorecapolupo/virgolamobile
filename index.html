@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Convertitore IEEE 754 (32 bit)</title>
+  <title>IEEE 754 Converter</title>
   <link
     href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
     rel="stylesheet"
@@ -11,164 +11,137 @@
     crossorigin="anonymous"
   />
   <style>
-    body {
-      background: #f0f2f5;
-      padding-top: 3rem;
-    }
-    .card {
-      border-radius: 1rem;
-      box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.1);
-    }
-    .big-input {
-      font-size: 1.25rem;
-      padding: 0.75rem;
-    }
-    .big-button {
-      font-size: 1.25rem;
-      padding: 0.75rem;
-    }
-    pre {
-      background: #eef1f5;
-      padding: 1rem;
-      border-radius: 0.5rem;
-      max-height: 300px;
-      overflow-y: auto;
-    }
-    .bit-box {
-      font-family: monospace;
-      background: #fff;
-      padding: 0.5rem;
-      border: 1px solid #ddd;
-      border-radius: 0.25rem;
-      display: inline-block;
-      margin-bottom: 0.5rem;
-      word-break: break-all;
-    }
+    body { background: #eef2f7; }
+    .card { border: none; border-radius: .8rem; box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.1); }
+    .nav-pills .nav-link.active { background-color: #0d6efd; }
+    .bit-box { font-family: monospace; background: #fff; padding: .4rem .6rem; border-radius: .25rem; }
+    pre { background: #f8f9fa; padding: .75rem; border-radius: .5rem; max-height: 300px; overflow-y: auto; }
   </style>
 </head>
 <body>
 
-<div class="container">
-  <div class="card p-4 mb-4">
-    <h1 class="h3 text-center mb-3">Convertitore IEEE 754 (32-bit)</h1>
-    <p class="text-center text-muted mb-4">
-      Inserisci un numero decimale (es. <code>-5.828125</code>) per ottenerne la rappresentazione in virgola mobile.
-    </p>
+<div class="container py-5">
+  <div class="card mx-auto" style="max-width: 800px;">
+    <div class="card-body">
+      <h1 class="h4 text-center mb-4">IEEE 754 Converter (32-bit)</h1>
 
-    <form id="converterForm" novalidate>
-      <div class="mb-3">
-        <label for="decimalInput" class="form-label">Numero decimale</label>
-        <input
-          type="text"
-          id="decimalInput"
-          class="form-control big-input"
-          placeholder="es. 12.34 o -0.1"
-          required
-          pattern="^-?\d+(\.\d+)?$"
-        />
-        <div class="invalid-feedback">
-          Inserisci un numero valido (opzionalmente con parte decimale).
+      <!-- Input -->
+      <div class="mb-4">
+        <label for="decInput" class="form-label">Numero decimale</label>
+        <input type="text" id="decInput" class="form-control" placeholder="Es. -5.828125" />
+      </div>
+      <div class="text-end mb-4">
+        <button id="btnConvert" class="btn btn-primary">Converti</button>
+      </div>
+
+      <!-- Tab navigation -->
+      <ul class="nav nav-pills mb-4 justify-content-center" id="tabs">
+        <li class="nav-item">
+          <button class="nav-link active" data-bs-target="#resultTab" data-bs-toggle="pill">Risultato</button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link" data-bs-target="#stepsTab" data-bs-toggle="pill">Procedimento</button>
+        </li>
+      </ul>
+
+      <!-- Tab content -->
+      <div class="tab-content">
+        <!-- Risultato -->
+        <div class="tab-pane fade show active" id="resultTab">
+          <div class="row text-center mb-3">
+            <div class="col">
+              <div>Segno</div>
+              <div id="bitSign" class="bit-box">-</div>
+            </div>
+            <div class="col">
+              <div>Esponente<br><small>(8-bit, bias 127)</small></div>
+              <div id="bitExp" class="bit-box">-</div>
+            </div>
+            <div class="col">
+              <div>Mantissa<br><small>(23-bit)</small></div>
+              <div id="bitMan" class="bit-box">-</div>
+            </div>
+          </div>
+          <hr/>
+          <div class="text-center mb-3">
+            <div>IEEE 754 (32-bit)</div>
+            <div id="bitFull" class="bit-box">-</div>
+          </div>
+        </div>
+
+        <!-- Procedimento -->
+        <div class="tab-pane fade" id="stepsTab">
+          <h6>Dettaglio dei passaggi:</h6>
+          <pre id="calcLog">Nessun calcolo effettuato.</pre>
         </div>
       </div>
-      <button type="submit" class="btn btn-primary big-button w-100">
-        Converti
-      </button>
-    </form>
-  </div>
-
-  <div id="results" class="card p-4 d-none">
-    <h2 class="h5 mb-3">Risultati</h2>
-    <div class="row mb-2">
-      <div class="col-4"><strong>Segno</strong></div>
-      <div class="col-8"><span id="bitSign" class="bit-box">-</span></div>
     </div>
-    <div class="row mb-2">
-      <div class="col-4"><strong>Esponente<br/><small>(8 bit, bias 127)</small></strong></div>
-      <div class="col-8"><span id="bitExponent" class="bit-box">-</span></div>
-    </div>
-    <div class="row mb-2">
-      <div class="col-4"><strong>Mantissa<br/><small>(23 bit)</small></strong></div>
-      <div class="col-8"><span id="bitMantissa" class="bit-box">-</span></div>
-    </div>
-    <hr/>
-    <div class="row mb-3">
-      <div class="col-4"><strong>IEEE 754 (32 bit)</strong></div>
-      <div class="col-8"><span id="bitFull" class="bit-box">-</span></div>
-    </div>
-
-    <h3 class="h6">Dettaglio calcoli</h3>
-    <pre id="calcSteps">Nessun calcolo effettuato.</pre>
   </div>
 </div>
 
 <script>
-  (function() {
-    const form = document.getElementById('converterForm');
-    const results = document.getElementById('results');
-    const inp = document.getElementById('decimalInput');
-    const bitSign = document.getElementById('bitSign');
-    const bitExponent = document.getElementById('bitExponent');
-    const bitMantissa = document.getElementById('bitMantissa');
-    const bitFull = document.getElementById('bitFull');
-    const calcSteps = document.getElementById('calcSteps');
+(function(){
+  const inp = document.getElementById('decInput');
+  const btn = document.getElementById('btnConvert');
+  const bitSign = document.getElementById('bitSign');
+  const bitExp  = document.getElementById('bitExp');
+  const bitMan  = document.getElementById('bitMan');
+  const bitFull = document.getElementById('bitFull');
+  const logPre  = document.getElementById('calcLog');
 
-    form.addEventListener('submit', e => {
-      e.preventDefault();
-      form.classList.add('was-validated');
-      if (!form.checkValidity()) return;
+  btn.addEventListener('click', () => {
+    const v = parseFloat(inp.value);
+    if (isNaN(v)) {
+      alert('Inserisci un numero valido!');
+      return;
+    }
+    const sign = v < 0 ? 1 : 0;
+    const absV = Math.abs(v);
+    let steps = [];
+    steps.push(`Numero input: ${v}`);
+    steps.push(`Bit segno: ${sign} (${v<0? 'negativo':'positivo'})`);
 
-      const num = parseFloat(inp.value);
-      const sign = num < 0 ? 1 : 0;
-      const absNum = Math.abs(num);
-      let expBin = '', mantBin = '', steps = [];
+    // caso zero
+    if (absV === 0) {
+      steps.push('Valore zero → esponente e mantissa tutti 0.');
+      render(sign, '00000000', '00000000000000000000000', steps);
+      return;
+    }
 
-      steps.push(`Numero di input: ${num}`);
-      steps.push(`Bit di segno: ${sign}`);
+    // 1) esponente
+    const rawE = Math.floor(Math.log2(absV));
+    const biasE = rawE + 127;
+    const binE  = biasE.toString(2).padStart(8,'0');
+    steps.push(`log2(|v|) = ${Math.log2(absV).toFixed(6)}`);
+    steps.push(`Esponente non bias: ${rawE}`);
+    steps.push(`Bias 127 → esponente = ${biasE} → binario: ${binE}`);
 
-      if (absNum === 0) {
-        expBin = '00000000';
-        mantBin = '00000000000000000000000';
-        steps.push('Caso zero: esponente e mantissa tutti 0.');
-      } else {
-        // ... dentro il listener 'submit', sostituisci la parte di calcolo mantissa e composizione finale con:
+    // 2) mantissa
+    const norm = absV / Math.pow(2, rawE);
+    steps.push(`Valore normalizzato: ${norm.toFixed(8)} = 1.x`);
+    let frac = norm -1, binM='';
+    for (let i=0; i<23; i++){
+      frac*=2;
+      if(frac>=1){ binM+='1'; frac-=1; }
+      else        { binM+='0'; }
+    }
+    binM = binM.padEnd(23,'0');
+    steps.push(`Estraggo 23 bit mantissa: ${binM}`);
 
-// Calcolo mantissa (sempre 23 bit)
-const normalized = absNum / Math.pow(2, rawExp);
-let frac = normalized - 1;
-let bits = '';
-for (let i = 0; i < 23; i++) {
-  frac *= 2;
-  if (frac >= 1) {
-    bits += '1';
-    frac -= 1;
-  } else {
-    bits += '0';
+    render(sign, binE, binM, steps);
+  });
+
+  function render(sign, exp, man, steps){
+    const full = `${sign}${exp}${man}`;
+    bitSign.textContent = sign;
+    bitExp .textContent = exp;
+    bitMan .textContent = man;
+    bitFull.textContent = full.match(/.{1,8}/g).join(' ');
+    logPre.textContent = steps.join('\n');
+    // switch to risultato tab
+    new bootstrap.Tab(document.querySelector('[data-bs-target="#resultTab"]')).show();
   }
-}
-// Assicuriamoci di avere esattamente 23 bit
-mantBin = bits.padEnd(23, '0');
-steps.push(`Mantissa (23 bit): ${mantBin}`);
-
-// Composizione finale dei 32 bit
-const fullRaw = `${sign}${expBin.padStart(8,'0')}${mantBin}`;
-const fullGrouped = fullRaw.match(/.{1,8}/g).join(' ');
-bitFull.textContent = fullGrouped;
-
-// Verifica lunghezze
-console.assert(fullRaw.length === 32, `Lunghezza totale = ${fullRaw.length}, dovrebbe essere 32`);
-
-      }
-
-      // Composizione finale
-      const full = `${sign}${expBin}${mantBin}`;
-      bitSign.textContent = sign;
-      bitExponent.textContent = expBin;
-      bitMantissa.textContent = mantBin;
-      bitFull.textContent = full.match(/.{1,8}/g).join(' ');
-      calcSteps.textContent = steps.join('\n');
-      results.classList.remove('d-none');
-    });
-  })();
+})();
 </script>
 
 <script
