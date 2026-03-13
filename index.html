@@ -50,15 +50,14 @@
   <div class="card mx-auto" style="max-width: 800px;">
     <div class="card-body">
       <h1 class="h4 text-center mb-4">IEEE 754 Converter (32-bit)</h1>
-      <p> 
-        IEEE 754 è uno standard utilizzato nelle app professionali e scientifiche per rappresentare numeri decimali
-        in formato binario, in questo caso sfruttando esattamente 32 bit. L'algoritmo usa 1 bit per il segno, 8 per 
-        l'esponente (biased a 127), i 23 rimanenti per la mantissa. Se proviamo a riconvertire il numero originale,
-        con alcuni numeri (ad esempio: 1.25) la ricostruzione sarà perfetta, in altri (ad esempio: 1.29) questo processo
-        non è reversibile, e induce un errore di calcolo. Immaginiamo di trasmettere delle coordinate GPS (lat, lon) è
-        evidente (dovrebbe esserlo!) che un errore del genere cambi la posizione rilevata anche dell'ordine dei km sulle
-        cifre decimali meno significative. 
-      </p>
+<p>
+  IEEE 754 è uno standard per rappresentare numeri decimali in binario a 32 bit:
+  1 bit per il segno, 8 per l'esponente (bias 127), 23 per la mantissa.
+  Poiché non tutti i decimali sono rappresentabili esattamente, la codifica può
+  introdurre un errore di arrotondamento. Ad esempio 1.25 è rappresentato
+  perfettamente, mentre 1.29 no. Su coordinate GPS (~45°) l'errore tipico
+  è dell'ordine dei decimetri.
+</p>
       <div class="mb-4">
         <label for="decInput" class="form-label">Numero decimale</label>
         <input type="text" id="decInput" class="form-control" placeholder="Es. 11.22" />
@@ -233,7 +232,9 @@
     if (error === 0) {
       html += `<span class="text-success">Nessun errore di rappresentazione: la trasmissione è perfetta.</span>`;
     } else {
-      html += `<span class="text-danger">Presente errore di arrotondamento. In fase di trasmissione, questo può portare a una leggera perdita di precisione numerica, soprattutto nei calcoli iterativi o scientifici.</span>`;
+      html += `<span class="text-danger">Errore di arrotondamento: float32 non può rappresentare esattamente questo valore. Nei calcoli iterativi o scientifici l'errore può accumularsi.</span>`;
+      
+      //html += `<span class="text-danger">Presente errore di arrotondamento. In fase di rappresentazione/codifica, questo può portare a una leggera perdita di precisione numerica, soprattutto nei calcoli iterativi o scientifici.</span>`;
     }
 
     resultBox.innerHTML = html;
